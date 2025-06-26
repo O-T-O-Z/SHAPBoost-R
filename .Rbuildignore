@@ -1,0 +1,11 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^SHAPBoost\.Rproj$
+^LICENSE\.md$
+^README\.Rmd$
+^\.lintr$
+^test\.R$
+^\.github$
+^\.DS_Store$
+^\.quarto$
+^cran-comments\.md$

@@ -1,0 +1,16 @@
+Package: SHAPBoost
+Title: A package for the SHAPBoost feature selection algorithm
+Version: 0.0.0.9000
+Authors@R: 
+    person("Ömer Tarik", "Özyilmaz", , "o.t.ozyilmaz@umcg.nl", role = c("aut", "cre"))
+Description: SHAPBoost is a boosting-based feature selection technique that ranks features iteratively based on Shapley values.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports:
+    xgboost,
+    SHAPforxgboost,
+    methods,
+    caret,
+    Matrix

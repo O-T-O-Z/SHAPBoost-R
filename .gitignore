@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.Rdata
+.httr-oauth
+.DS_Store
+.quarto
+.lintr
+test.R
+*.tar.gz
+*.tgz
+.Rbuildignore
