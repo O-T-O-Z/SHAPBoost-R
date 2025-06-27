@@ -6,16 +6,14 @@
 \alias{SHAPBoostEstimator}
 \title{SHAPBoostEstimator Class}
 \description{
-This class implements the SHAPBoost algorithm for feature selection and model fitting.
+This class implements the SHAPBoost algorithm for feature selection.
 It is designed to be extended by specific implementations such as SHAPBoostRegressor and
-SHAPBoostSurvival.
+SHAPBoostSurvival. Any new method should implement the abstract methods defined in this class.
 }
 \section{Fields}{
 
 \describe{
 \item{\code{estimators}}{A list of estimators used in the SHAPBoost algorithm.}
-
-\item{\code{loss}}{A function representing the loss function used in the algorithm.}
 
 \item{\code{metric}}{A character string representing the evaluation metric.}
 

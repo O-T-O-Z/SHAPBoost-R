@@ -3,6 +3,26 @@
 #' @importFrom Matrix Matrix
 NULL
 
+#' SHAPBoostRegressor is a reference class for regression feature selection through gradient boosting.
+#' 
+#' This class extends the SHAPBoostEstimator class and implements methods for initializing, updating weights, scoring, and fitting estimators.
+#' @field estimators A list of estimators used in the SHAPBoost regression model.
+#' @field metric The metric used for evaluation, such as "mae", "mse", or "r2".
+#' @field number_of_folds The number of folds for cross-validation.
+#' @field epsilon A small value to prevent division by zero.
+#' @field max_number_of_features The maximum number of features to consider.
+#' @field siso_ranking_size The size of the SISO ranking.
+#' @field siso_order The order of the SISO ranking.
+#' @field reset A boolean indicating whether to reset the model.
+#' @field xgb_importance The importance type for XGBoost.
+#' @field num_resets The number of resets for the model.
+#' @field fold_random_state The random state for folds.
+#' @field verbose The verbosity level for logging.
+#' @field stratification A boolean indicating whether to use stratification.
+#' @field use_shap A boolean indicating whether to use SHAP values.
+#' @field collinearity_check A boolean indicating whether to check for collinearity.
+#' @field correlation_threshold The threshold for correlation to consider features as collinear.
+#' 
 #' @export SHAPBoostRegressor
 #' @exportClass SHAPBoostRegressor
 SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
@@ -73,14 +93,14 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
-                    verbose = verbose,
+                    verbose = 0,
                 )
             } else {
                 dtrain <- xgboost::xgb.DMatrix(data = X, label = y)
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
-                    verbose = verbose
+                    verbose = 0,
                 )
             }
             return(estimators[[estimator_id + 1]])

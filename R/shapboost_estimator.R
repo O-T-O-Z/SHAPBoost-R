@@ -4,15 +4,13 @@
 #' @importFrom SHAPforxgboost shap.values
 NULL
 
-
 #' SHAPBoostEstimator Class
 #' 
-#' This class implements the SHAPBoost algorithm for feature selection and model fitting.
+#' This class implements the SHAPBoost algorithm for feature selection.
 #' It is designed to be extended by specific implementations such as SHAPBoostRegressor and
-#' SHAPBoostSurvival.
+#' SHAPBoostSurvival. Any new method should implement the abstract methods defined in this class.
 #'
 #' @field estimators A list of estimators used in the SHAPBoost algorithm.
-#' @field loss A function representing the loss function used in the algorithm.
 #' @field metric A character string representing the evaluation metric.
 #' @field number_of_folds The number of folds for cross-validation.
 #' @field epsilon A small value to determine convergence.
@@ -35,7 +33,6 @@ SHAPBoostEstimator <- setRefClass(
     "SHAPBoostEstimator",
     fields = list(
         estimators = "list",
-        loss = "function",
         metric = "character",
         number_of_folds = "numeric",
         epsilon = "numeric",
@@ -59,11 +56,11 @@ SHAPBoostEstimator <- setRefClass(
         global_sample_weights = "numeric",
         alpha_abs = "array",
         alpha = "array",
-        metrics_miso = "list"
+        metrics_miso = "list",
+        collinear_features = "list"
     ),
     methods = list(
         initialize = function(estimators,
-                              loss,
                               metric,
                               number_of_folds = 5,
                               epsilon = 1e-3,
@@ -80,7 +77,6 @@ SHAPBoostEstimator <- setRefClass(
                               collinearity_check = TRUE,
                               correlation_threshold = 0.9) {
             estimators <<- estimators
-            loss <<- loss
             metric <<- metric
             number_of_folds <<- number_of_folds
             epsilon <<- epsilon
@@ -99,6 +95,7 @@ SHAPBoostEstimator <- setRefClass(
             global_sample_weights <<- numeric(0)
             all_selected_variables <<- list()
             selected_subset <<- list()
+            collinear_features <<- list()
             stop_conditions <<- list(
                 stop_epsilon = 10e6,
                 repeated_variable = FALSE,
@@ -210,27 +207,7 @@ SHAPBoostEstimator <- setRefClass(
             stop_conditions$reset_count <<- stop_conditions$reset_count + 1
             i <<- i - 1
         },
-        siso = function(X, y) {
-            ranking <- rank_features(X, y)
-            cat("Ranking of features:\n")
-            for (j in seq_along(ranking$Feature)) {
-                cat(ranking$Feature[j], ": ", ranking$Importance[j], "\n", sep = "")
-            }
-            ranking <- ranking$Feature
-            if (length(ranking) == 0) {
-                return()
-            }
-            if (length(all_selected_variables) != 0 && collinearity_check) {
-                ranking <- correlation_check()
-            }
-            if (length(ranking) == 0) {
-                return()
-            }
-
-            combs <- lapply(1:siso_order, function(i) {
-                combn(ranking, i, simplify = FALSE)
-            })
-            combs <- unlist(combs, recursive = FALSE)
+        select_best_siso = function(X, y, combs) {
             if (identical(metric, "mae") || identical(metric, "mse") || identical(metric, "logloss")) {
                 best_metric <- Inf
             } else {
@@ -262,12 +239,13 @@ SHAPBoostEstimator <- setRefClass(
                     } else {
                         colnames(y_test) <- c("y_test", "y_test_upper_bound")
                     }
-
                     metrics[i] <- score(preds, y_test)
                 }
                 # Calculate mean metric
                 mean_metric <- mean(metrics)
-                cat("SISO (", comb_index, "/", length(combs), ") [", paste(colnames(X_subset), collapse = ", "), "]:", metric, "=", mean_metric, "\n")
+                if (verbose > 0) {
+                    cat("SISO (", comb_index, "/", length(combs), ") [", paste(colnames(X_subset), collapse = ", "), "]:", metric, "=", mean_metric, "\n")
+                }
                 if (identical(metric, "mae") || identical(metric, "mse") || identical(metric, "logloss")) {
                     if (mean_metric < best_metric) {
                         best_metric <- mean_metric
@@ -278,8 +256,54 @@ SHAPBoostEstimator <- setRefClass(
                     best_comb <- comb
                 }
             }
-            cat("Best combination:", paste(c(best_comb, all_selected_variables), collapse = ", "), "\n")
+
+            if (verbose > 0) {
+                cat("Best combination:", paste(c(best_comb, all_selected_variables), collapse = ", "), "\n")
+            }
             return(best_comb)
+        },
+        siso = function(X, y) {
+            if (length(collinear_features) > 0) {
+                if (verbose > 0) {
+                    cat("Removing", length(collinear_features), "collinear features.\n")
+                }
+                X <- as.matrix(X)
+                for (col in collinear_features) {
+                    if (col %in% colnames(X)) {
+                        X[, col] <- 0
+                    }
+                }
+            }
+            ranking <- rank_features(X, y)
+
+            if (verbose > 0) {
+                cat("Ranking of features:\n")
+                for (j in seq_along(ranking$Feature)) {
+                    cat(ranking$Feature[j], ": ", ranking$Importance[j], "\n", sep = "")
+                }
+            }
+            ranking <- ranking$Feature
+            if (length(ranking) == 0) {
+                return()
+            }
+            combs <- lapply(1:siso_order, function(i) {
+                combn(ranking, i, simplify = FALSE)
+            })
+            combs <- unlist(combs, recursive = FALSE)
+            selected_variable <- select_best_siso(X, y, combs)
+            if (collinearity_check) {
+                correlated_vars <- correlation_check(X, selected_variable)
+                while (length(correlated_vars) > 1) {
+                    cat("Found", length(correlated_vars), "correlated variables:", paste(correlated_vars, collapse = ", "), "\n")
+                    selected_variable <- select_best_siso(X, y, correlated_vars)
+                    highly_correlated_vars <- correlated_vars[!correlated_vars %in% selected_variable]
+                    collinear_features <<- c(collinear_features, highly_correlated_vars)
+                    correlated_vars <- correlation_check(X, selected_variable)
+                    correlated_vars <- setdiff(correlated_vars, unlist(collinear_features))
+                }
+                cat("No correlated variables found.\n")
+            }
+            return(selected_variable)
         },
         miso = function(X, y) {
             X <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
@@ -309,7 +333,10 @@ SHAPBoostEstimator <- setRefClass(
                 metrics[i] <- score(preds, y_test)
             }
             mean_metric <- mean(metrics)
-            cat("MISO Mean metric:", metric, ":", mean_metric, "\n")
+
+            if (verbose > 0) {
+                cat("MISO Mean metric:", metric, ":", mean_metric, "\n")
+            }
             metrics_miso <<- c(metrics_miso, mean_metric)
         },
         rank_features = function(X, y) {
@@ -327,7 +354,6 @@ SHAPBoostEstimator <- setRefClass(
                 cat("No features with non-zero importance found.\n")
                 return()
             }
-            # TODO: Add check for when number of features is less than siso_ranking_size
 
             # get siso_ranking_size features
             if (nrow(feature_importance) > siso_ranking_size) {
@@ -335,8 +361,24 @@ SHAPBoostEstimator <- setRefClass(
             }
             return(feature_importance)
         },
-        correlation_check = function(ranking) {
-            # TODO: Implement correlation_check
+        correlation_check = function(X, selected_variable) {
+            X <- as.matrix(X)
+            target <- X[, selected_variable]
+
+            # Calculate correlations only between target and all other features
+            non_constant_cols <- which(apply(X, 2, function(x) {
+                !all(x == 0) && sd(x, na.rm = TRUE) > .Machine$double.eps  # Check if non-zero & non-constant
+            }))
+
+            correlations <- rep(NA, ncol(X))  # Initialize with NA
+            if (length(non_constant_cols) > 0) {
+                sub_X <- X[, non_constant_cols, drop = FALSE]
+                correlations[non_constant_cols] <- apply(sub_X, 2, function(x) cor(x, target))
+            }
+
+            # Find highly correlated features (excluding self)
+            highly_correlated <- which(abs(correlations) > correlation_threshold)
+            return(colnames(X)[highly_correlated])
         },
         fit_estimator = function(X, y, sample_weight = NULL, estimator_id = 0) {
             stop("Abstract method: fit_estimator() must be implemented by child classes")
