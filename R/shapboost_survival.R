@@ -19,7 +19,7 @@ NULL
 #' @field num_resets The number of resets for the model.
 #' @field fold_random_state The random state for folds.
 #' @field verbose The verbosity level for logging.
-#' @field stratification A boolean indicating whether to use stratification.
+#' @field stratification A boolean indicating whether to use stratification. Only applicable for c-index metric.
 #' @field use_shap A boolean indicating whether to use SHAP values.
 #' @field collinearity_check A boolean indicating whether to check for collinearity.
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.

@@ -11,7 +11,7 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 \section{Fields}{
 
 \describe{
-\item{\code{estimators}}{A list of estimators used in the SHAPBoost regression model.}
+\item{\code{evaluator}}{The model that is used to evaluate each additional feature. Choice between "lr" and "xgb".}
 
 \item{\code{metric}}{The metric used for evaluation, such as "mae", "mse", or "r2".}
 
@@ -35,7 +35,7 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 
 \item{\code{verbose}}{The verbosity level for logging.}
 
-\item{\code{stratification}}{A boolean indicating whether to use stratification.}
+\item{\code{stratification}}{A boolean indicating whether to use stratification. Only applicable for c-index metric.}
 
 \item{\code{use_shap}}{A boolean indicating whether to use SHAP values.}
 

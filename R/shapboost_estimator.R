@@ -21,7 +21,7 @@ NULL
 #' @field num_resets The number of resets allowed.
 #' @field fold_random_state The random state for reproducibility in cross-validation.
 #' @field verbose The verbosity level of the output.
-#' @field stratification A logical indicating whether to use stratified sampling.
+#' @field stratification A logical indicating whether to use stratified sampling. Only applicable for c-index metric.
 #' @field collinearity_check A logical indicating whether to check for collinearity.
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
@@ -176,7 +176,7 @@ SHAPBoostEstimator <- setRefClass(
                 selected_subset <<- all_selected_variables[-length(all_selected_variables)]
                 metrics_miso <<- metrics_miso[-length(metrics_miso)]
                 if (stop_conditions$reset_allowed == TRUE) {
-                    stop_conditions$epsilon <<- epsilon + 1
+                    stop_conditions$stop_epsilon <<- epsilon + 1
                     reset_weights(y)
                 }
             }
@@ -217,7 +217,12 @@ SHAPBoostEstimator <- setRefClass(
                 } else {
                     X_subset <- as.data.frame(X_subset)
                 }
-                folds <- caret::createFolds(y = seq_len(nrow(X_subset)), k = number_of_folds, list = TRUE, returnTrain = FALSE)
+                if (stratification && metric == "c-index") {
+                    strat <- as.integer(y[, 1] == y[, 2])
+                } else {
+                    strat <- seq_len(nrow(X_subset))
+                }
+                folds <- caret::createFolds(y = strat, k = number_of_folds, list = TRUE, returnTrain = FALSE)
                 metrics <- numeric(number_of_folds)
 
                 for (i in seq_along(folds)) {
@@ -312,6 +317,11 @@ SHAPBoostEstimator <- setRefClass(
                 y <- as.data.frame(y)
             }
 
+            if (stratification && metric == "c-index") {
+                strat <- as.integer(y[, 1] == y[, 2])
+            } else {
+                strat <- seq_len(nrow(X))
+            }
             folds <- caret::createFolds(y = seq_len(nrow(X)), k = number_of_folds, list = TRUE, returnTrain = FALSE)
             metrics <- numeric(number_of_folds)
 

@@ -13,7 +13,7 @@ SHAPBoostSurvival. Any new method should implement the abstract methods defined 
 \section{Fields}{
 
 \describe{
-\item{\code{estimators}}{A list of estimators used in the SHAPBoost algorithm.}
+\item{\code{evaluator}}{The model that is used to evaluate each additional feature.}
 
 \item{\code{metric}}{A character string representing the evaluation metric.}
 
@@ -29,17 +29,13 @@ SHAPBoostSurvival. Any new method should implement the abstract methods defined 
 
 \item{\code{reset}}{A logical indicating whether to reset the weights.}
 
-\item{\code{xgb_importance}}{The method for calculating feature importance in XGBoost.}
-
 \item{\code{num_resets}}{The number of resets allowed.}
 
 \item{\code{fold_random_state}}{The random state for reproducibility in cross-validation.}
 
 \item{\code{verbose}}{The verbosity level of the output.}
 
-\item{\code{stratification}}{A logical indicating whether to use stratified sampling.}
-
-\item{\code{use_shap}}{A logical indicating whether to use SHAP values for feature importance.}
+\item{\code{stratification}}{A logical indicating whether to use stratified sampling. Only applicable for c-index metric.}
 
 \item{\code{collinearity_check}}{A logical indicating whether to check for collinearity.}
 
