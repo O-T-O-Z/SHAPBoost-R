@@ -10,7 +10,7 @@ NULL
 #' It is designed to be extended by specific implementations such as SHAPBoostRegressor and
 #' SHAPBoostSurvival. Any new method should implement the abstract methods defined in this class.
 #'
-#' @field estimators A list of estimators used in the SHAPBoost algorithm.
+#' @field evaluator The model that is used to evaluate each additional feature.
 #' @field metric A character string representing the evaluation metric.
 #' @field number_of_folds The number of folds for cross-validation.
 #' @field epsilon A small value to determine convergence.
@@ -18,12 +18,10 @@ NULL
 #' @field siso_ranking_size The number of features to consider in the SISO ranking.
 #' @field siso_order The order of combinations to consider in SISO.
 #' @field reset A logical indicating whether to reset the weights.
-#' @field xgb_importance The method for calculating feature importance in XGBoost.
 #' @field num_resets The number of resets allowed.
 #' @field fold_random_state The random state for reproducibility in cross-validation.
 #' @field verbose The verbosity level of the output.
 #' @field stratification A logical indicating whether to use stratified sampling.
-#' @field use_shap A logical indicating whether to use SHAP values for feature importance.
 #' @field collinearity_check A logical indicating whether to check for collinearity.
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
@@ -32,7 +30,7 @@ NULL
 SHAPBoostEstimator <- setRefClass(
     "SHAPBoostEstimator",
     fields = list(
-        estimators = "list",
+        evaluator = "character",
         metric = "character",
         number_of_folds = "numeric",
         epsilon = "numeric",
@@ -40,14 +38,13 @@ SHAPBoostEstimator <- setRefClass(
         siso_ranking_size = "numeric",
         siso_order = "numeric",
         reset = "logical",
-        xgb_importance = "character",
         num_resets = "numeric",
         fold_random_state = "numeric",
         verbose = "numeric",
         stratification = "logical",
-        use_shap = "logical",
         collinearity_check = "logical",
         correlation_threshold = "numeric",
+        estimators = "list",
         all_selected_variables = "list",
         selected_subset = "list",
         stop_conditions = "list",
@@ -60,7 +57,7 @@ SHAPBoostEstimator <- setRefClass(
         collinear_features = "list"
     ),
     methods = list(
-        initialize = function(estimators,
+        initialize = function(evaluator,
                               metric,
                               number_of_folds = 5,
                               epsilon = 1e-3,
@@ -68,14 +65,13 @@ SHAPBoostEstimator <- setRefClass(
                               siso_ranking_size = 100,
                               siso_order = 1,
                               reset = TRUE,
-                              xgb_importance = "gain",
-                              num_resets = 3,
+                              num_resets = 1,
                               fold_random_state = 275,
                               verbose = 0,
                               stratification = FALSE,
-                              use_shap = TRUE,
                               collinearity_check = TRUE,
-                              correlation_threshold = 0.9) {
+                              correlation_threshold = 0.7) {
+            evaluator <<- evaluator
             estimators <<- estimators
             metric <<- metric
             number_of_folds <<- number_of_folds
@@ -84,12 +80,10 @@ SHAPBoostEstimator <- setRefClass(
             siso_ranking_size <<- siso_ranking_size
             siso_order <<- siso_order
             reset <<- reset
-            xgb_importance <<- xgb_importance
             num_resets <<- num_resets
             fold_random_state <<- fold_random_state
             verbose <<- verbose
             stratification <<- stratification
-            use_shap <<- use_shap
             collinearity_check <<- collinearity_check
             correlation_threshold <<- correlation_threshold
             global_sample_weights <<- numeric(0)
@@ -218,7 +212,11 @@ SHAPBoostEstimator <- setRefClass(
                 comb <- combs[[comb_index]]
                 X_subset <- X[, comb, drop = FALSE]
                 X_subset <- cbind(X_subset, X[, unlist(all_selected_variables), drop = FALSE])
-                X_subset <- Matrix::Matrix(as.matrix(X_subset), sparse = TRUE)
+                if (evaluator == "xgb") {
+                    X_subset <- Matrix::Matrix(as.matrix(X_subset), sparse = TRUE)
+                } else {
+                    X_subset <- as.data.frame(X_subset)
+                }
                 folds <- caret::createFolds(y = seq_len(nrow(X_subset)), k = number_of_folds, list = TRUE, returnTrain = FALSE)
                 metrics <- numeric(number_of_folds)
 
@@ -306,8 +304,13 @@ SHAPBoostEstimator <- setRefClass(
             return(selected_variable)
         },
         miso = function(X, y) {
-            X <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
-            y <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
+            if (evaluator == "xgb") {
+                X <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
+                y <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
+            } else {
+                X <- as.data.frame(X)
+                y <- as.data.frame(y)
+            }
 
             folds <- caret::createFolds(y = seq_len(nrow(X)), k = number_of_folds, list = TRUE, returnTrain = FALSE)
             metrics <- numeric(number_of_folds)

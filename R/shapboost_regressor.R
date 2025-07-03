@@ -6,7 +6,8 @@ NULL
 #' SHAPBoostRegressor is a reference class for regression feature selection through gradient boosting.
 #' 
 #' This class extends the SHAPBoostEstimator class and implements methods for initializing, updating weights, scoring, and fitting estimators.
-#' @field estimators A list of estimators used in the SHAPBoost regression model.
+#' 
+#' @field evaluator The model that is used to evaluate each additional feature. Choice between "lr" and "xgb".
 #' @field metric The metric used for evaluation, such as "mae", "mse", or "r2".
 #' @field number_of_folds The number of folds for cross-validation.
 #' @field epsilon A small value to prevent division by zero.
@@ -85,23 +86,40 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
             stop("Invalid metric")
         },
         fit_estimator = function(X, y, sample_weight = NULL, estimator_id = 0) {
-            X <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
-            y <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
+            X_mat <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
+            y_mat <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
             # TODO: add early stopping and hyperparameter tuning
             if (estimator_id == 0) {
-                dtrain <- xgboost::xgb.DMatrix(data = X, label = y, weight = sample_weight)
+                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat, weight = sample_weight)
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
                     verbose = 0,
+                )
+            } else if (estimator_id == 1 && evaluator == "xgb") {
+                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat)
+                estimators[[estimator_id + 1]] <<- xgboost::xgboost(
+                    data = dtrain,
+                    nrounds = 100,
+                    verbose = 0,
+                )
+            } else if (estimator_id == 1 && evaluator == "lr") {
+                X_df <- as.data.frame(as.matrix(X_mat))
+                # remove columns with the same name
+                col_names <- colnames(X_df)
+                non_duplicated_cols <- seq_along(col_names)
+                if (any(duplicated(col_names))) {
+                    non_duplicated_cols <- setdiff(seq_along(col_names), which(duplicated(col_names)))
+                    X_df <- as.data.frame(X_df[, non_duplicated_cols])
+                }
+                colnames(X_df) <- col_names[non_duplicated_cols]
+
+                estimators[[estimator_id + 1]] <<- lm(
+                    formula = as.formula(paste("y ~ .")),
+                    data = cbind(X_df, y),
                 )
             } else {
-                dtrain <- xgboost::xgb.DMatrix(data = X, label = y)
-                estimators[[estimator_id + 1]] <<- xgboost::xgboost(
-                    data = dtrain,
-                    nrounds = 100,
-                    verbose = 0,
-                )
+                stop("Evaluator", evaluator, "is not supported! Please choose one of ['lr', 'xgb'].")
             }
             return(estimators[[estimator_id + 1]])
         }
