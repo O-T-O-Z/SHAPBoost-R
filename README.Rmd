@@ -18,38 +18,61 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of SHAPBoost is to ...
+SHAPBoost is an R package for the implementation of the SHAPBoost feature selection algorithm, which is a
+boosting method that uses SHAP values for feature ranking and selects in an iterative forward fashion. 
+It is designed to work with regression and survival analysis.
 
 ## Installation
 
-You can install the development version of SHAPBoost from [GitHub](https://github.com/) with:
+You can install the development version of SHAPBoost from [GitHub](https://github.com/O-T-O-Z/SHAPBoost-R) with:
 
 ``` r
 # install.packages("pak")
 pak::pak("O-T-O-Z/SHAPBoost-R")
 ```
 
-## Example
+## Regression Example
 
-This is a basic example which shows you how to solve a common problem:
+For regression tasks, SHAPBoost can be used with various evaluators such as linear regression or XGBoost (`xgb`). 
+For metrics, it support `mae` (Mean Absolute Error), `mse` (Mean Squared Error), and `r2` (R-squared or $R^{2}$). 
 
-```{r example}
+Below is an example using `eyedata`.
+
+```{r message=FALSE, warning=FALSE, name="regression-example"}
 library(SHAPBoost)
-## basic example code
+library(flare)
+
+shapboost <- SHAPBoostRegressor$new(
+    evaluator = "lr",
+    metric = "mae",
+    siso_ranking_size = 10,
+    verbose = 0,
+)
+
+data(eyedata)
+X <- as.data.frame(x)
+y <- as.data.frame(y)
+subset <- shapboost$fit(X, y)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+## Survival Example
+For survival analysis, SHAPBoost can be used with the `coxph` or `xgb` evaluator and the `c-index` metric.
 
-```{r cars}
-summary(cars)
+An example using the `gbsg` dataset is shown below. 
+
+```{r message=FALSE, warning=FALSE, name="survival-example"}
+library(SHAPBoost)
+library(survival)
+
+shapboost <- SHAPBoostSurvival$new(
+    evaluator = "coxph",
+    metric = "c-index",
+    verbose = 0
+)
+X <- as.data.frame(gbsg[, -c(1, 10, 11)])
+y <- as.data.frame(gbsg[, c(10, 11)])
+y[, 2] <- ifelse(y[, 2] == 1, y[, 1], Inf)
+colnames(y) <- c("lower", "upper")
+
+subset <- shapboost$fit(X, y)
 ```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.

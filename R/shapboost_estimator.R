@@ -12,6 +12,7 @@ NULL
 #'
 #' @field evaluator The model that is used to evaluate each additional feature.
 #' @field metric A character string representing the evaluation metric.
+#' @field xgb_params A list of parameters for the XGBoost model.
 #' @field number_of_folds The number of folds for cross-validation.
 #' @field epsilon A small value to determine convergence.
 #' @field max_number_of_features The maximum number of features to select.
@@ -32,6 +33,7 @@ SHAPBoostEstimator <- setRefClass(
     fields = list(
         evaluator = "character",
         metric = "character",
+        xgb_params = "list",
         number_of_folds = "numeric",
         epsilon = "numeric",
         max_number_of_features = "numeric",
@@ -59,6 +61,7 @@ SHAPBoostEstimator <- setRefClass(
     methods = list(
         initialize = function(evaluator,
                               metric,
+                              xgb_params = list(),
                               number_of_folds = 5,
                               epsilon = 1e-3,
                               max_number_of_features = 100,
@@ -74,6 +77,7 @@ SHAPBoostEstimator <- setRefClass(
             evaluator <<- evaluator
             estimators <<- estimators
             metric <<- metric
+            xgb_params <<- xgb_params
             number_of_folds <<- number_of_folds
             epsilon <<- epsilon
             max_number_of_features <<- max_number_of_features
@@ -260,9 +264,7 @@ SHAPBoostEstimator <- setRefClass(
                 }
             }
 
-            if (verbose > 0) {
-                cat("Best combination:", paste(c(best_comb, all_selected_variables), collapse = ", "), "\n")
-            }
+            cat("Best combination:", paste(c(best_comb, all_selected_variables), collapse = ", "), "\n")
             return(best_comb)
         },
         siso = function(X, y) {

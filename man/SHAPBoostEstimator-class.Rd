@@ -17,6 +17,8 @@ SHAPBoostSurvival. Any new method should implement the abstract methods defined 
 
 \item{\code{metric}}{A character string representing the evaluation metric.}
 
+\item{\code{xgb_params}}{A list of parameters for the XGBoost model.}
+
 \item{\code{number_of_folds}}{The number of folds for cross-validation.}
 
 \item{\code{epsilon}}{A small value to determine convergence.}

@@ -9,6 +9,7 @@ NULL
 #' 
 #' @field evaluator The model that is used to evaluate each additional feature. Choice between "lr" and "xgb".
 #' @field metric The metric used for evaluation, such as "mae", "mse", or "r2".
+#' @field xgb_params A list of parameters for the XGBoost model.
 #' @field number_of_folds The number of folds for cross-validation.
 #' @field epsilon A small value to prevent division by zero.
 #' @field max_number_of_features The maximum number of features to consider.
@@ -95,6 +96,7 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
                     data = dtrain,
                     nrounds = 100,
                     verbose = 0,
+                    params = xgb_params,
                 )
             } else if (estimator_id == 1 && evaluator == "xgb") {
                 dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat)
@@ -102,6 +104,7 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
                     data = dtrain,
                     nrounds = 100,
                     verbose = 0,
+                    params = xgb_params,
                 )
             } else if (estimator_id == 1 && evaluator == "lr") {
                 X_df <- as.data.frame(as.matrix(X_mat))

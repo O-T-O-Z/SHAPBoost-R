@@ -9,6 +9,7 @@ NULL
 #' 
 #' @field evaluator The model that is used to evaluate each additional feature. Choice between "coxph" and "xgb".
 #' @field metric The metric used for evaluation, such as "mae", "mse", or "r2".
+#' @field xgb_params A list of parameters for the XGBoost model.
 #' @field number_of_folds The number of folds for cross-validation.
 #' @field epsilon A small value to prevent division by zero.
 #' @field max_number_of_features The maximum number of features to consider.
@@ -34,6 +35,13 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
             callSuper(...)
         },
         init_alpha = function(y) {
+            xgb_params <<- modifyList(
+                list(
+                    objective = "survival:cox",
+                    eval_metric = "cox-nloglik"
+                ),
+                xgb_params
+            )
             n_samples <- nrow(y)
             alpha_abs <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)
             alpha <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)
@@ -130,15 +138,14 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
             y[, 1] <- ifelse(y[, 1] == y[, 2], y[, 1], -y[, 1])
             X_mat <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
             y_mat <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
-            # TODO: add early stopping and hyperparameter tuning
+
             if (estimator_id == 0) {
                 dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1], weight = sample_weight)
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
                     verbose = 0,
-                    objective = "survival:cox",
-                    eval_metric = "cox-nloglik",
+                    params = xgb_params
                 )
             } else if (estimator_id == 1 && evaluator == "xgb") {
                 dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1])
@@ -146,8 +153,7 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
                     data = dtrain,
                     nrounds = 100,
                     verbose = 0,
-                    objective = "survival:cox",
-                    eval_metric = "cox-nloglik",
+                    params = xgb_params
                 )
             } else if (estimator_id == 1 && evaluator == "coxph") {
                 X_df <- as.data.frame(as.matrix(X_mat))

@@ -15,6 +15,8 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 
 \item{\code{metric}}{The metric used for evaluation, such as "mae", "mse", or "r2".}
 
+\item{\code{xgb_params}}{A list of parameters for the XGBoost model.}
+
 \item{\code{number_of_folds}}{The number of folds for cross-validation.}
 
 \item{\code{epsilon}}{A small value to prevent division by zero.}
