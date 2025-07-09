@@ -1,3 +1,5 @@
+# SHAPBoost 2.0.0
+
 # SHAPBoost 1.0.0
 
 ## New Features

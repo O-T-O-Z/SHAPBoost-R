@@ -1,6 +1,6 @@
 Package: SHAPBoost
 Title: A Package for the SHAPBoost Feature Selection Algorithm
-Version: 1.0.0
+Version: 2.0.0
 Authors@R: c(
     person("Ömer Tarik", "Özyilmaz", email = "o.t.ozyilmaz@umcg.nl", role = c("aut", "cre", "cph"), comment = c(ORCID = "0009-0005-3911-5520")),
     person("Tamas", "Szili-Török", role = c("aut", "cph"), comment = c(ORCID = "0000-0001-8675-9234")))
