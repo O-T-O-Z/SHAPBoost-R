@@ -165,18 +165,25 @@ SHAPBoostEstimator <- setRefClass(
             }
 
             selected_subset <<- selected_subset[!duplicated(selected_subset)]
+            cat("No more features to select or stop conditions met.\n")
+            if (length(selected_subset) == 0) {
+                cat("No features selected.\n")
+                return(NULL)
+            }
+            cat("*--------------------------------------------*\n")
             cat("Selected subset:", paste(selected_subset, collapse = ", "), "\n")
+            cat("*--------------------------------------------*\n")
             return(selected_subset)
         },
         check_stop_conditions = function(y) {
             # Condition 1 -> Maximum number of features reached
             if (i >= max_number_of_features) {
-                cat("Maximum number of features reached\n")
+                cat("STOP CONDITION: Maximum number of features reached\n")
                 selected_subset <<- all_selected_variables
             }
             # Condition 2 -> epsilon value falls below the threshold.
             if (stop_conditions$stop_epsilon <= epsilon) {
-                cat("Epsilon value falls below the threshold\n")
+                cat("STOP CONDITION: Epsilon value falls below the threshold\n")
                 selected_subset <<- all_selected_variables[-length(all_selected_variables)]
                 metrics_miso <<- metrics_miso[-length(metrics_miso)]
                 if (stop_conditions$reset_allowed == TRUE) {
@@ -186,7 +193,7 @@ SHAPBoostEstimator <- setRefClass(
             }
             # Condition 3 -> a specific feature has been already selected previously.
             if (stop_conditions$repeated_variable == TRUE) {
-                cat("Repeated variable found\n")
+                cat("STOP CONDITION: Repeated variable found\n")
                 selected_subset <<- all_selected_variables
                 if (stop_conditions$reset_allowed == TRUE) {
                     stop_conditions$repeated_variable <<- FALSE
@@ -195,7 +202,7 @@ SHAPBoostEstimator <- setRefClass(
             }
         },
         reset_weights = function(y) {
-            cat("Resetting weights\n")
+            cat("Resetting weights...\n")
             if (stop_conditions$reset_count < num_resets) {
                 global_sample_weights <<- rep(1, nrow(X))
             } else {
@@ -222,7 +229,7 @@ SHAPBoostEstimator <- setRefClass(
                     X_subset <- as.data.frame(X_subset)
                 }
                 if (stratification && metric == "c-index") {
-                    strat <- as.integer(y[, 1] == y[, 2])
+                    strat <- as.integer(y[, 2])
                 } else {
                     strat <- seq_len(nrow(X_subset))
                 }
@@ -264,7 +271,8 @@ SHAPBoostEstimator <- setRefClass(
                 }
             }
 
-            cat("Best combination:", paste(c(best_comb, all_selected_variables), collapse = ", "), "\n")
+            cat("Best feature(s):", paste(c(best_comb, all_selected_variables), collapse = ", "), "with", metric, "=", best_metric, "\n")
+            cat("--------------------------------------------\n\n")
             return(best_comb)
         },
         siso = function(X, y) {
@@ -306,21 +314,12 @@ SHAPBoostEstimator <- setRefClass(
                     correlated_vars <- correlation_check(X, selected_variable)
                     correlated_vars <- setdiff(correlated_vars, unlist(collinear_features))
                 }
-                cat("No correlated variables found.\n")
             }
             return(selected_variable)
         },
         miso = function(X, y) {
-            if (evaluator == "xgb") {
-                X <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
-                y <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
-            } else {
-                X <- as.data.frame(X)
-                y <- as.data.frame(y)
-            }
-
             if (stratification && metric == "c-index") {
-                strat <- as.integer(y[, 1] == y[, 2])
+                strat <- as.integer(y[, 2])
             } else {
                 strat <- seq_len(nrow(X))
             }
@@ -336,9 +335,15 @@ SHAPBoostEstimator <- setRefClass(
 
                 fit_estimator(X_train, y_train, estimator_id = 1)
 
-                preds <- as.data.frame(predict(estimators[[2]], X_test))
+                if (evaluator == "xgb") {
+                    X_test_trans <- as.matrix(X_test)
+                } else {
+                    X_test_trans <- as.data.frame(X_test)
+                }
+                preds <- as.data.frame(predict(estimators[[2]], X_test_trans))
                 colnames(preds) <- "preds"
                 y_test <- as.data.frame(as.matrix(y_test))
+
                 if (length(y_test) == 1) {
                     colnames(y_test) <- c("y_test")
                 } else {

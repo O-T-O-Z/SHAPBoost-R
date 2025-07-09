@@ -29,19 +29,35 @@ NULL
 #' @exportClass SHAPBoostSurvival
 SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
     contains = "SHAPBoostEstimator",
-    fields = list(),
+    fields = list(
+        cox_objective = "logical"
+    ),
     methods = list(
         initialize = function(...) {
             callSuper(...)
         },
         init_alpha = function(y) {
-            xgb_params <<- modifyList(
-                list(
-                    objective = "survival:cox",
-                    eval_metric = "cox-nloglik"
-                ),
-                xgb_params
-            )
+            if ("objective" %in% names(xgb_params)) {
+                if (xgb_params$objective == "survival:cox") {
+                    cox_objective <<- TRUE
+                } else if (xgb_params$objective == "survival:aft") {
+                    cox_objective <<- FALSE
+                } else {
+                    stop("Invalid objective for survival analysis. Use 'survival:cox' or 'survival:aft'.")
+                }
+            } else {
+                cat("No objective specified in xgb_params, defaulting to 'survival:cox'.\n")
+                xgb_params$objective <<- "survival:cox"
+                xgb_params$eval_metric <<- "cox-nloglik"
+                cox_objective <<- TRUE
+            }
+            # xgb_params <<- modifyList(
+            #     list(
+            #         objective = "survival:cox",
+            #         eval_metric = "cox-nloglik"
+            #     ),
+            #     xgb_params
+            # )
             n_samples <- nrow(y)
             alpha_abs <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)
             alpha <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)
@@ -85,8 +101,12 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
             stop("Invalid metric")
         },
         calculate_c_index = function(y_pred, y_test) {
-            t <- -y_test[, 1]
-            e <- as.integer(y_test[, 1] == y_test[, 2])
+            if (evaluator == "coxph" || cox_objective) {
+                t <- -y_test[, 1]  # Time is negative for cox model
+            } else {
+                t <- y_test[, 1]  # Time is positive for AFT model
+            }
+            e <- as.integer(y_test[, 2])
             p <- y_pred
 
             # Create pairwise comparisons
@@ -134,13 +154,27 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
             ))
         },
         fit_estimator = function(X, y, sample_weight = NULL, estimator_id = 0) {
-            # y should be negative when censored and positive when not censored
-            y[, 1] <- ifelse(y[, 1] == y[, 2], y[, 1], -y[, 1])
+            # first column is time, second column is event indicator, check
+            if (ncol(y) != 2) {
+                stop("y must have 2 columns: time and event indicator")
+            }
+            # third and fourth are lower and upper bounds for the time
+            y[, 3] <- y[, 1]
+            y[, 4] <- ifelse(y[, 2], y[, 1], Inf)
+            # fifth column is the negative time for censored samples
+            y[, 5] <- ifelse(y[, 2], y[, 1], -y[, 1])
             X_mat <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
             y_mat <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
 
             if (estimator_id == 0) {
-                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1], weight = sample_weight)
+                # check if cox or aft
+                if (cox_objective) {
+                    dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1], weight = sample_weight)
+                } else {
+                    dtrain <- xgboost::xgb.DMatrix(data = X_mat, weight = sample_weight)
+                    xgboost::setinfo(dtrain, 'label_lower_bound', y_mat[, 3])
+                    xgboost::setinfo(dtrain, 'label_upper_bound', y_mat[, 4])
+                }
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
@@ -148,7 +182,14 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
                     params = xgb_params
                 )
             } else if (estimator_id == 1 && evaluator == "xgb") {
-                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1])
+                if (cox_objective) {
+                    dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1])
+                } else {
+                    dtrain <- xgboost::xgb.DMatrix(data = X_mat)
+                    xgboost::setinfo(dtrain, 'label_lower_bound', y_mat[, 3])
+                    xgboost::setinfo(dtrain, 'label_upper_bound', y_mat[, 4])
+                }
+
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
@@ -166,7 +207,7 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
                 colnames(X_df) <- col_names[non_duplicated_cols]
 
                 time <- y[, 1]
-                status <- ifelse(y[, 1] == y[, 2], 1, 0)
+                status <- y[, 2]
                 y_surv <- survival::Surv(time, status)
                 estimators[[estimator_id + 1]] <<- survival::coxph(
                     formula = y_surv ~ .,

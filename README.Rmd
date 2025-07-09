@@ -31,7 +31,7 @@ You can install the development version of SHAPBoost from [GitHub](https://githu
 pak::pak("O-T-O-Z/SHAPBoost-R")
 ```
 
-## Regression Example
+## Regression example
 
 For regression tasks, SHAPBoost can be used with various evaluators such as linear regression or XGBoost (`xgb`). 
 For metrics, it support `mae` (Mean Absolute Error), `mse` (Mean Squared Error), and `r2` (R-squared or $R^{2}$). 
@@ -55,8 +55,11 @@ y <- as.data.frame(y)
 subset <- shapboost$fit(X, y)
 ```
 
-## Survival Example
+## Survival example
 For survival analysis, SHAPBoost can be used with the `coxph` or `xgb` evaluator and the `c-index` metric.
+Please provide the survival data in a format where the first column is the time to event and the second column is the event indicator (1 for event, 0 for censored).
+Moreover, the `xgb_params` argument can be used to pass additional parameters to the XGBoost model, such as `objective` and `eval_metric`.
+Supported objectives are `survival:cox` and `survival:aft`, with their respective evaluation metrics `cox-nloglik` and `aft-nloglik`.
 
 An example using the `gbsg` dataset is shown below. 
 
@@ -67,12 +70,14 @@ library(survival)
 shapboost <- SHAPBoostSurvival$new(
     evaluator = "coxph",
     metric = "c-index",
-    verbose = 0
+    verbose = 0,
+    xgb_params = list(
+        objective = "survival:cox",
+        eval_metric = "cox-nloglik"
+    )
 )
 X <- as.data.frame(gbsg[, -c(1, 10, 11)])
 y <- as.data.frame(gbsg[, c(10, 11)])
-y[, 2] <- ifelse(y[, 2] == 1, y[, 1], Inf)
-colnames(y) <- c("lower", "upper")
 
 subset <- shapboost$fit(X, y)
 ```
