@@ -3,8 +3,7 @@ Title: A package for the SHAPBoost feature selection algorithm
 Version: 0.0.0.9000
 Authors@R: c(
     person("Ömer Tarik", "Özyilmaz", "o.t.ozyilmaz@umcg.nl", role = c("aut", "cre", "cph"), comment = c(ORCID = "0009-0005-3911-5520")),
-    person("Tamas", "Szili-Török", role = c("aut", "cph"), comment = c(ORCID = "0000-0001-8675-9234"))
-)
+    person("Tamas", "Szili-Török", role = c("aut", "cph"), comment = c(ORCID = "0000-0001-8675-9234")))
 Description: SHAPBoost is a boosting-based feature selection technique that ranks features iteratively based on Shapley values.
 License: MIT + file LICENSE
 Encoding: UTF-8
