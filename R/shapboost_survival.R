@@ -25,6 +25,22 @@ NULL
 #' @field collinearity_check A boolean indicating whether to check for collinearity.
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
+#' @examples
+#' \dontrun{
+#' library(SHAPBoost)
+#' library(flare)
+#' data(eyedata)
+#' shapboost <- SHAPBoostRegressor$new(
+#'  evaluator = "lr",
+#'  metric = "mae",
+#'  siso_ranking_size = 10,
+#'  verbose = 0,
+#' )
+#' X <- as.data.frame(x)
+#' y <- as.data.frame(y)
+#' subset <- shapboost$fit(X, y)
+#' }
+#' 
 #' @export SHAPBoostSurvival
 #' @exportClass SHAPBoostSurvival
 SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",

@@ -41,6 +41,7 @@ Below is an example using `eyedata`.
 ```{r message=FALSE, warning=FALSE, name="regression-example"}
 library(SHAPBoost)
 library(flare)
+data(eyedata)
 
 shapboost <- SHAPBoostRegressor$new(
     evaluator = "lr",
@@ -49,7 +50,6 @@ shapboost <- SHAPBoostRegressor$new(
     verbose = 0,
 )
 
-data(eyedata)
 X <- as.data.frame(x)
 y <- as.data.frame(y)
 subset <- shapboost$fit(X, y)

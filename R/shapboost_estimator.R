@@ -26,6 +26,22 @@ NULL
 #' @field collinearity_check A logical indicating whether to check for collinearity.
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
+#' @examples
+#' \dontrun{
+#' library(SHAPBoost)
+#' library(flare)
+#' data(eyedata)
+#' shapboost <- SHAPBoostRegressor$new(
+#'  evaluator = "lr",
+#'  metric = "mae",
+#'  siso_ranking_size = 10,
+#'  verbose = 0,
+#' )
+#' X <- as.data.frame(x)
+#' y <- as.data.frame(y)
+#' subset <- shapboost$fit(X, y)
+#' }
+#' 
 #' @export SHAPBoostEstimator
 #' @exportClass SHAPBoostEstimator
 SHAPBoostEstimator <- setRefClass(
@@ -113,9 +129,9 @@ SHAPBoostEstimator <- setRefClass(
         update_weights = function(X, y, global_sample_weights, metric_miso) {
             stop("Abstract method: update_weights() must be implemented by child classes")
         },
-        fit = function(X, Y, feature_names = NULL, custom_global_sample_weights = NULL) {
-            if (!is.data.frame(X) || !is.data.frame(Y)) {
-                stop("X and Y must be data frames.")
+        fit = function(X, y, feature_names = NULL, custom_global_sample_weights = NULL) {
+            if (!is.data.frame(X) || !is.data.frame(y)) {
+                stop("X and y must be data frames.")
             }
             if (!is.null(custom_global_sample_weights)) {
                 global_sample_weights <<- custom_global_sample_weights
@@ -127,7 +143,7 @@ SHAPBoostEstimator <- setRefClass(
             stop_conditions$repeated_variable <<- FALSE
             stop_conditions$reset_count <<- 0
 
-            init_alpha(Y)
+            init_alpha(y)
 
             while (
                 stop_conditions$stop_epsilon > epsilon &&
@@ -150,7 +166,7 @@ SHAPBoostEstimator <- setRefClass(
                 new_variables <- setdiff(selected_variable, all_selected_variables)
                 if (length(new_variables) == 0) {
                     stop_conditions$repeated_variable <<- TRUE
-                    check_stop_conditions(y)
+                    check_stop_conditions(X, y)
                     next
                 }
                 all_selected_variables <<- c(all_selected_variables, new_variables)
@@ -161,7 +177,7 @@ SHAPBoostEstimator <- setRefClass(
                     stop_conditions$stop_epsilon <<- abs(unlist(metrics_miso[length(metrics_miso)]) - unlist(metrics_miso[length(metrics_miso) - 1]))
                 }
                 i <<- i + 1
-                check_stop_conditions(y)
+                check_stop_conditions(X, y)
             }
 
             selected_subset <<- selected_subset[!duplicated(selected_subset)]
@@ -175,7 +191,7 @@ SHAPBoostEstimator <- setRefClass(
             cat("*--------------------------------------------*\n")
             return(selected_subset)
         },
-        check_stop_conditions = function(y) {
+        check_stop_conditions = function(X, y) {
             # Condition 1 -> Maximum number of features reached
             if (i >= max_number_of_features) {
                 cat("STOP CONDITION: Maximum number of features reached\n")
@@ -188,7 +204,7 @@ SHAPBoostEstimator <- setRefClass(
                 metrics_miso <<- metrics_miso[-length(metrics_miso)]
                 if (stop_conditions$reset_allowed == TRUE) {
                     stop_conditions$stop_epsilon <<- epsilon + 1
-                    reset_weights(y)
+                    reset_weights(X, y)
                 }
             }
             # Condition 3 -> a specific feature has been already selected previously.
@@ -197,11 +213,11 @@ SHAPBoostEstimator <- setRefClass(
                 selected_subset <<- all_selected_variables
                 if (stop_conditions$reset_allowed == TRUE) {
                     stop_conditions$repeated_variable <<- FALSE
-                    reset_weights(y)
+                    reset_weights(X, y)
                 }
             }
         },
-        reset_weights = function(y) {
+        reset_weights = function(X, y) {
             cat("Resetting weights...\n")
             if (stop_conditions$reset_count < num_resets) {
                 global_sample_weights <<- rep(1, nrow(X))

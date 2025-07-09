@@ -47,3 +47,23 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 }}
 
 
+\examples{
+\dontrun{
+library(SHAPBoost)
+library(survival)
+data(eyedata)
+shapboost <- SHAPBoostSurvival$new(
+    evaluator = "coxph",
+    metric = "c-index",
+    verbose = 0,
+    xgb_params = list(
+        objective = "survival:cox",
+        eval_metric = "cox-nloglik"
+    )
+)
+X <- as.data.frame(gbsg[, -c(1, 10, 11)])
+y <- as.data.frame(gbsg[, c(10, 11)])
+subset <- shapboost$fit(X, y)
+}
+
+}

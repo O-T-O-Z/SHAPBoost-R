@@ -34,6 +34,7 @@ Below is an example using `eyedata`.
 ``` r
 library(SHAPBoost)
 library(flare)
+data(eyedata)
 
 shapboost <- SHAPBoostRegressor$new(
     evaluator = "lr",
@@ -42,7 +43,6 @@ shapboost <- SHAPBoostRegressor$new(
     verbose = 0,
 )
 
-data(eyedata)
 X <- as.data.frame(x)
 y <- as.data.frame(y)
 subset <- shapboost$fit(X, y)

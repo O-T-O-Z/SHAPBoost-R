@@ -45,3 +45,20 @@ SHAPBoostSurvival. Any new method should implement the abstract methods defined 
 }}
 
 
+\examples{
+\dontrun{
+library(SHAPBoost)
+library(flare)
+data(eyedata)
+shapboost <- SHAPBoostRegressor$new(
+ evaluator = "lr",
+ metric = "mae",
+ siso_ranking_size = 10,
+ verbose = 0,
+)
+X <- as.data.frame(x)
+y <- as.data.frame(y)
+subset <- shapboost$fit(X, y)
+}
+
+}
