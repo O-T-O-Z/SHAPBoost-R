@@ -27,19 +27,19 @@ NULL
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
 #' @examples
-#' \dontrun{
-#' library(SHAPBoost)
-#' library(flare)
-#' data(eyedata)
-#' shapboost <- SHAPBoostRegressor$new(
-#'  evaluator = "lr",
-#'  metric = "mae",
-#'  siso_ranking_size = 10,
-#'  verbose = 0,
-#' )
-#' X <- as.data.frame(x)
-#' y <- as.data.frame(y)
-#' subset <- shapboost$fit(X, y)
+#' \donttest{
+#' if (requireNamespace("flare", quietly = TRUE)) {
+#'   data("eyedata", package = "flare")
+#'   shapboost <- SHAPBoostRegressor$new(
+#'     evaluator = "lr",
+#'     metric = "mae",
+#'     siso_ranking_size = 10,
+#'     verbose = 0
+#'   )
+#'   X <- as.data.frame(x)
+#'   y <- as.data.frame(y)
+#'   subset <- shapboost$fit(X, y)
+#' }
 #' }
 #' 
 #' @export SHAPBoostEstimator
@@ -57,7 +57,7 @@ SHAPBoostEstimator <- setRefClass(
         siso_order = "numeric",
         reset = "logical",
         num_resets = "numeric",
-        fold_random_state = "numeric",
+        fold_random_state = "ANY",
         verbose = "numeric",
         stratification = "logical",
         collinearity_check = "logical",
@@ -85,7 +85,7 @@ SHAPBoostEstimator <- setRefClass(
                               siso_order = 1,
                               reset = TRUE,
                               num_resets = 1,
-                              fold_random_state = 275,
+                              fold_random_state = NULL,
                               verbose = 0,
                               stratification = FALSE,
                               collinearity_check = TRUE,
@@ -118,7 +118,11 @@ SHAPBoostEstimator <- setRefClass(
             )
             i <<- 1
             metrics_miso <<- list()
-            set.seed(fold_random_state)
+            if (!is.null(fold_random_state) && is.numeric(fold_random_state)) {
+                set.seed(fold_random_state)
+            } else if (!is.null(fold_random_state) && !is.numeric(fold_random_state)) {
+                stop("fold_random_state must be a numeric value or NULL.")
+            }
         },
         score = function(preds, y_test) {
             stop("Abstract method: score() must be implemented by child classes")
@@ -150,12 +154,12 @@ SHAPBoostEstimator <- setRefClass(
                     i <= max_number_of_features &&
                     stop_conditions$repeated_variable == FALSE
             ) {
-                cat("\n", "Iteration:", i, "\n")
+                message("\n", "Iteration:", i, "\n")
                 if (stop_conditions$reset_count >= num_resets) {
                     stop_conditions$reset_count <<- 0
                     stop_conditions$reset_allowed <<- FALSE
                 }
-                cat("Selected variables:\n", paste(all_selected_variables, collapse = ", "), "\n")
+                message("Selected variables:\n", paste(all_selected_variables, collapse = ", "), "\n")
 
                 selected_variable <- siso(X, y)
                 if (length(selected_variable) == 0) {
@@ -181,25 +185,25 @@ SHAPBoostEstimator <- setRefClass(
             }
 
             selected_subset <<- selected_subset[!duplicated(selected_subset)]
-            cat("No more features to select or stop conditions met.\n")
+            message("No more features to select or stop conditions met.\n")
             if (length(selected_subset) == 0) {
-                cat("No features selected.\n")
+                message("No features selected.\n")
                 return(NULL)
             }
-            cat("*--------------------------------------------*\n")
-            cat("Selected subset:", paste(selected_subset, collapse = ", "), "\n")
-            cat("*--------------------------------------------*\n")
+            message("*--------------------------------------------*\n")
+            message("Selected subset:", paste(selected_subset, collapse = ", "), "\n")
+            message("*--------------------------------------------*\n")
             return(selected_subset)
         },
         check_stop_conditions = function(X, y) {
             # Condition 1 -> Maximum number of features reached
             if (i >= max_number_of_features) {
-                cat("STOP CONDITION: Maximum number of features reached\n")
+                warning("STOP CONDITION: Maximum number of features reached\n")
                 selected_subset <<- all_selected_variables
             }
             # Condition 2 -> epsilon value falls below the threshold.
             if (stop_conditions$stop_epsilon <= epsilon) {
-                cat("STOP CONDITION: Epsilon value falls below the threshold\n")
+                warning("STOP CONDITION: Epsilon value falls below the threshold\n")
                 selected_subset <<- all_selected_variables[-length(all_selected_variables)]
                 metrics_miso <<- metrics_miso[-length(metrics_miso)]
                 if (stop_conditions$reset_allowed == TRUE) {
@@ -209,7 +213,7 @@ SHAPBoostEstimator <- setRefClass(
             }
             # Condition 3 -> a specific feature has been already selected previously.
             if (stop_conditions$repeated_variable == TRUE) {
-                cat("STOP CONDITION: Repeated variable found\n")
+                warning("STOP CONDITION: Repeated variable found\n")
                 selected_subset <<- all_selected_variables
                 if (stop_conditions$reset_allowed == TRUE) {
                     stop_conditions$repeated_variable <<- FALSE
@@ -218,7 +222,7 @@ SHAPBoostEstimator <- setRefClass(
             }
         },
         reset_weights = function(X, y) {
-            cat("Resetting weights...\n")
+            warning("Resetting weights...\n")
             if (stop_conditions$reset_count < num_resets) {
                 global_sample_weights <<- rep(1, nrow(X))
             } else {
@@ -287,8 +291,8 @@ SHAPBoostEstimator <- setRefClass(
                 }
             }
 
-            cat("Best feature(s):", paste(c(best_comb, all_selected_variables), collapse = ", "), "with", metric, "=", best_metric, "\n")
-            cat("--------------------------------------------\n\n")
+            message("Best feature(s):", paste(c(best_comb, all_selected_variables), collapse = ", "), "with", metric, "=", best_metric, "\n")
+            message("--------------------------------------------\n\n")
             return(best_comb)
         },
         siso = function(X, y) {
@@ -323,7 +327,7 @@ SHAPBoostEstimator <- setRefClass(
             if (collinearity_check) {
                 correlated_vars <- correlation_check(X, selected_variable)
                 while (length(correlated_vars) > 1) {
-                    cat("Found", length(correlated_vars), "correlated variables:", paste(correlated_vars, collapse = ", "), "\n")
+                    message("Found", length(correlated_vars), "correlated variables:", paste(correlated_vars, collapse = ", "), "\n")
                     selected_variable <- select_best_siso(X, y, correlated_vars)
                     highly_correlated_vars <- correlated_vars[!correlated_vars %in% selected_variable]
                     collinear_features <<- c(collinear_features, highly_correlated_vars)
@@ -387,7 +391,7 @@ SHAPBoostEstimator <- setRefClass(
             feature_importance <- feature_importance[order(-feature_importance$Importance), ]
             feature_importance <- feature_importance[feature_importance$Importance != 0, ]
             if (length(feature_importance) == 0) {
-                cat("No features with non-zero importance found.\n")
+                message("No features with non-zero importance found.\n")
                 return()
             }
 

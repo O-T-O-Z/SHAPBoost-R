@@ -48,22 +48,19 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 
 
 \examples{
-\dontrun{
-library(SHAPBoost)
-library(survival)
-data(eyedata)
-shapboost <- SHAPBoostSurvival$new(
-    evaluator = "coxph",
-    metric = "c-index",
-    verbose = 0,
-    xgb_params = list(
-        objective = "survival:cox",
-        eval_metric = "cox-nloglik"
-    )
-)
-X <- as.data.frame(gbsg[, -c(1, 10, 11)])
-y <- as.data.frame(gbsg[, c(10, 11)])
-subset <- shapboost$fit(X, y)
+\donttest{
+if (requireNamespace("flare", quietly = TRUE)) {
+  data("eyedata", package = "flare")
+  shapboost <- SHAPBoostRegressor$new(
+    evaluator = "lr",
+    metric = "mae",
+    siso_ranking_size = 10,
+    verbose = 0
+  )
+  X <- as.data.frame(x)
+  y <- as.data.frame(y)
+  subset <- shapboost$fit(X, y)
+}
 }
 
 }

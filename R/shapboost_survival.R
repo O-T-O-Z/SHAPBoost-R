@@ -26,19 +26,22 @@ NULL
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
 #' @examples
-#' \dontrun{
-#' library(SHAPBoost)
-#' library(flare)
-#' data(eyedata)
-#' shapboost <- SHAPBoostRegressor$new(
-#'  evaluator = "lr",
-#'  metric = "mae",
-#'  siso_ranking_size = 10,
-#'  verbose = 0,
-#' )
-#' X <- as.data.frame(x)
-#' y <- as.data.frame(y)
-#' subset <- shapboost$fit(X, y)
+#' \donttest{
+#' if (requireNamespace("survival", quietly = TRUE)) {
+#'   shapboost <- SHAPBoostSurvival$new(
+#'     evaluator = "coxph",
+#'     metric = "c-index",
+#'     verbose = 0,
+#'     xgb_params = list(
+#'       objective = "survival:cox",
+#'       eval_metric = "cox-nloglik"
+#'     )
+#'   )
+#'   
+#'   X <- as.data.frame(survival::gbsg[, -c(1, 10, 11)])
+#'   y <- as.data.frame(survival::gbsg[, c(10, 11)])
+#'   subset <- shapboost$fit(X, y)
+#' }
 #' }
 #' 
 #' @export SHAPBoostSurvival
@@ -62,7 +65,7 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
                     stop("Invalid objective for survival analysis. Use 'survival:cox' or 'survival:aft'.")
                 }
             } else {
-                cat("No objective specified in xgb_params, defaulting to 'survival:cox'.\n")
+                warning("No objective specified in xgb_params, defaulting to 'survival:cox'.\n")
                 xgb_params$objective <<- "survival:cox"
                 xgb_params$eval_metric <<- "cox-nloglik"
                 cox_objective <<- TRUE
