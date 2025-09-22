@@ -28,6 +28,7 @@ NULL
 #' @examples
 #' if (requireNamespace("survival", quietly = TRUE)) {
 #'   shapboost <- SHAPBoostSurvival$new(
+#'     max_number_of_features = 1,
 #'     evaluator = "coxph",
 #'     metric = "c-index",
 #'     verbose = 0,

@@ -51,6 +51,7 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 if (requireNamespace("flare", quietly = TRUE)) {
   data("eyedata", package = "flare")
   shapboost <- SHAPBoostRegressor$new(
+    max_number_of_features = 1,
     evaluator = "lr",
     metric = "mae",
     siso_ranking_size = 10,
