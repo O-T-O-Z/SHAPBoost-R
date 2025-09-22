@@ -48,7 +48,6 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 
 
 \examples{
-\donttest{
 if (requireNamespace("flare", quietly = TRUE)) {
   data("eyedata", package = "flare")
   shapboost <- SHAPBoostRegressor$new(
@@ -60,7 +59,6 @@ if (requireNamespace("flare", quietly = TRUE)) {
   X <- as.data.frame(x)
   y <- as.data.frame(y)
   subset <- shapboost$fit(X, y)
-}
 }
 
 }

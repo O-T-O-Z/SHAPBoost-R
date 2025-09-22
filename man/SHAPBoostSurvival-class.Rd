@@ -48,7 +48,6 @@ This class extends the SHAPBoostEstimator class and implements methods for initi
 
 
 \examples{
-\donttest{
 if (requireNamespace("survival", quietly = TRUE)) {
   shapboost <- SHAPBoostSurvival$new(
     evaluator = "coxph",
@@ -63,7 +62,6 @@ if (requireNamespace("survival", quietly = TRUE)) {
   X <- as.data.frame(survival::gbsg[, -c(1, 10, 11)])
   y <- as.data.frame(survival::gbsg[, c(10, 11)])
   subset <- shapboost$fit(X, y)
-}
 }
 
 }

@@ -26,7 +26,6 @@ NULL
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
 #' @examples
-#' \donttest{
 #' if (requireNamespace("flare", quietly = TRUE)) {
 #'   data("eyedata", package = "flare")
 #'   shapboost <- SHAPBoostRegressor$new(
@@ -38,7 +37,6 @@ NULL
 #'   X <- as.data.frame(x)
 #'   y <- as.data.frame(y)
 #'   subset <- shapboost$fit(X, y)
-#' }
 #' }
 #' 
 #' @export SHAPBoostRegressor

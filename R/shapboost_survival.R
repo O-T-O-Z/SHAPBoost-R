@@ -26,7 +26,6 @@ NULL
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
 #' 
 #' @examples
-#' \donttest{
 #' if (requireNamespace("survival", quietly = TRUE)) {
 #'   shapboost <- SHAPBoostSurvival$new(
 #'     evaluator = "coxph",
@@ -41,7 +40,6 @@ NULL
 #'   X <- as.data.frame(survival::gbsg[, -c(1, 10, 11)])
 #'   y <- as.data.frame(survival::gbsg[, c(10, 11)])
 #'   subset <- shapboost$fit(X, y)
-#' }
 #' }
 #' 
 #' @export SHAPBoostSurvival
@@ -70,13 +68,6 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
                 xgb_params$eval_metric <<- "cox-nloglik"
                 cox_objective <<- TRUE
             }
-            # xgb_params <<- modifyList(
-            #     list(
-            #         objective = "survival:cox",
-            #         eval_metric = "cox-nloglik"
-            #     ),
-            #     xgb_params
-            # )
             n_samples <- nrow(y)
             alpha_abs <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)
             alpha <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)

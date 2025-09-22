@@ -46,7 +46,6 @@ SHAPBoostSurvival. Any new method should implement the abstract methods defined 
 
 
 \examples{
-\donttest{
 if (requireNamespace("flare", quietly = TRUE)) {
   data("eyedata", package = "flare")
   shapboost <- SHAPBoostRegressor$new(
@@ -58,7 +57,6 @@ if (requireNamespace("flare", quietly = TRUE)) {
   X <- as.data.frame(x)
   y <- as.data.frame(y)
   subset <- shapboost$fit(X, y)
-}
 }
 
 }
