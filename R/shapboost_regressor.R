@@ -51,8 +51,8 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
         },
         init_alpha = function(y) {
             n_samples <- nrow(y)
-            alpha_abs <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)
-            alpha <<- matrix(0, nrow = n_samples, ncol = max_number_of_features)
+            alpha_abs <<- matrix(0, nrow = n_samples, ncol = max_number_of_features + 1)
+            alpha <<- matrix(0, nrow = n_samples, ncol = max_number_of_features + 1)
             alpha_abs[, 1] <<- rep(1, n_samples)
             alpha[, 1] <<- rep(1, n_samples)
             global_sample_weights <<- rep(1, n_samples)

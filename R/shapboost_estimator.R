@@ -290,7 +290,7 @@ SHAPBoostEstimator <- setRefClass(
                 }
             }
 
-            message("Best feature(s):", paste(c(best_comb, all_selected_variables), collapse = ", "), "with", metric, "=", best_metric, "\n")
+            message("Best feature(s):", paste(c(best_comb, all_selected_variables), collapse = ", "), " with ", metric, " = ", best_metric, "\n")
             message("--------------------------------------------\n\n")
             return(best_comb)
         },
