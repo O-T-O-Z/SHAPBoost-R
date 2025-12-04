@@ -4,7 +4,7 @@
 # SHAPBoost
 
 <!-- badges: start -->
-
+[![](https://cranlogs.r-pkg.org/badges/SHAPBoost)](https://cran.r-project.org/package=SHAPBoost)
 <!-- badges: end -->
 
 SHAPBoost is an R package for the implementation of the SHAPBoost
