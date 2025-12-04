@@ -2,6 +2,7 @@
 
 ## Bug Fixes
 * Fixed a bug that caused unsupported types in xgboost for SHAPBoostRegressor
+* Updated compatibility with latest xgboost versions
 
 # SHAPBoost 1.0.0
 

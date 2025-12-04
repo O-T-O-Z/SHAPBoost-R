@@ -175,37 +175,46 @@ SHAPBoostSurvival <- setRefClass("SHAPBoostSurvival",
             # fifth column is the negative time for censored samples
             y[, 5] <- ifelse(y[, 2], y[, 1], -y[, 1])
             X_mat <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
-            y_mat <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
-
+            # check if cox or aft
+            surv_params <- xgb_params
+            if (cox_objective) {
+                surv_params$objective   <- "survival:cox"
+                surv_params$eval_metric <- "cox-nloglik"
+                y_time <- as.numeric(y[, 1])
+            } else {
+                surv_params$objective   <- "survival:aft"
+                surv_params$eval_metric <- "aft-nloglik"
+                y_lower <- as.numeric(y[, 3])
+                y_upper <- as.numeric(y[, 4])
+            }
             if (estimator_id == 0) {
-                # check if cox or aft
                 if (cox_objective) {
-                    dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1], weight = sample_weight)
+                    dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_time, weight = sample_weight)
                 } else {
                     dtrain <- xgboost::xgb.DMatrix(data = X_mat, weight = sample_weight)
-                    xgboost::setinfo(dtrain, 'label_lower_bound', y_mat[, 3])
-                    xgboost::setinfo(dtrain, 'label_upper_bound', y_mat[, 4])
+                    xgboost::setinfo(dtrain, 'label_lower_bound', y_lower)
+                    xgboost::setinfo(dtrain, 'label_upper_bound', y_upper)
                 }
-                estimators[[estimator_id + 1]] <<- xgboost::xgboost(
-                    data = dtrain,
+                estimators[[estimator_id + 1]] <<- xgboost::xgb.train(
+                    params  = surv_params,
+                    data    = dtrain,
                     nrounds = 100,
-                    verbose = 0,
-                    params = xgb_params
+                    verbose = 0
                 )
             } else if (estimator_id == 1 && evaluator == "xgb") {
                 if (cox_objective) {
-                    dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat[, 1])
+                    dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_time)
                 } else {
                     dtrain <- xgboost::xgb.DMatrix(data = X_mat)
-                    xgboost::setinfo(dtrain, 'label_lower_bound', y_mat[, 3])
-                    xgboost::setinfo(dtrain, 'label_upper_bound', y_mat[, 4])
+                    xgboost::setinfo(dtrain, 'label_lower_bound', y_lower)
+                    xgboost::setinfo(dtrain, 'label_upper_bound', y_upper)
                 }
 
-                estimators[[estimator_id + 1]] <<- xgboost::xgboost(
-                    data = dtrain,
+                estimators[[estimator_id + 1]] <<- xgboost::xgb.train(
+                    params  = surv_params,
+                    data    = dtrain,
                     nrounds = 100,
-                    verbose = 0,
-                    params = xgb_params
+                    verbose = 0
                 )
             } else if (estimator_id == 1 && evaluator == "coxph") {
                 X_df <- as.data.frame(as.matrix(X_mat))

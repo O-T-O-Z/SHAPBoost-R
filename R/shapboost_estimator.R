@@ -381,7 +381,11 @@ SHAPBoostEstimator <- setRefClass(
         rank_features = function(X, y) {
             fit_estimator(X, y, sample_weight = global_sample_weights, estimator_id = 0)
             X_matrix <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
-            shap_values <- SHAPforxgboost::shap.values(estimators[[1]], X_train = X_matrix)
+            shap_values <- suppressWarnings(SHAPforxgboost::shap.values(estimators[[1]], X_train = X_matrix))
+            drop_cols <- c("BIAS", "(Intercept)")
+            shap_values$mean_shap_score <- shap_values$mean_shap_score[
+                !names(shap_values$mean_shap_score) %in% drop_cols
+            ]
             feature_importance <- data.frame(
                 Feature = names(shap_values$mean_shap_score),
                 Importance = shap_values$mean_shap_score,

@@ -103,27 +103,31 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
         },
         fit_estimator = function(X, y, sample_weight = NULL, estimator_id = 0) {
             X_mat <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
-            y_mat <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
+            if (ncol(y) != 1L) {
+                stop("y must be a single-column response.")
+            }
+            y <- y[[1L]]
+            y_vec <- as.numeric(y)
 
             if (!is.null(sample_weight)) {
                 sample_weight <- as.numeric(sample_weight)
             }
             # TODO: add early stopping and hyperparameter tuning
             if (estimator_id == 0) {
-                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat, weight = sample_weight)
-                estimators[[estimator_id + 1]] <<- xgboost::xgboost(
-                    data = dtrain,
+                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_vec, weight = sample_weight)
+                estimators[[estimator_id + 1]] <<- xgboost::xgb.train(
+                    params  = xgb_params,
+                    data    = dtrain,
                     nrounds = 100,
-                    verbose = 0,
-                    params = xgb_params,
+                    verbose = 0
                 )
             } else if (estimator_id == 1 && evaluator == "xgb") {
-                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat)
-                estimators[[estimator_id + 1]] <<- xgboost::xgboost(
-                    data = dtrain,
+                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_vec)
+                estimators[[estimator_id + 1]] <<- xgboost::xgb.train(
+                    params  = xgb_params,
+                    data    = dtrain,
                     nrounds = 100,
-                    verbose = 0,
-                    params = xgb_params,
+                    verbose = 0
                 )
             } else if (estimator_id == 1 && evaluator == "lr") {
                 X_df <- as.data.frame(as.matrix(X_mat))
