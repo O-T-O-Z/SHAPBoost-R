@@ -1,3 +1,8 @@
+# SHAPBoost 1.0.1
+
+## Bug Fixes
+* Fixed a bug that caused unsupported types in xgboost for SHAPBoostRegressor
+
 # SHAPBoost 1.0.0
 
 ## New Features
