@@ -105,23 +105,12 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
             X_mat <- Matrix::Matrix(as.matrix(X), sparse = TRUE)
             y_mat <- Matrix::Matrix(as.matrix(y), sparse = TRUE)
 
-            if (is.data.frame(y)) {
-                stopifnot(ncol(y) == 1L)
-                y_vec <- y[[1L]]
-            } else if (is.matrix(y)) {
-                stopifnot(ncol(y) == 1L)
-                y_vec <- y[, 1L]
-            } else {
-                y_vec <- y
-            }
-            y_vec <- as.numeric(y_vec)
-
             if (!is.null(sample_weight)) {
                 sample_weight <- as.numeric(sample_weight)
             }
             # TODO: add early stopping and hyperparameter tuning
             if (estimator_id == 0) {
-                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_vec, weight = sample_weight)
+                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat, weight = sample_weight)
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
@@ -129,7 +118,7 @@ SHAPBoostRegressor <- setRefClass("SHAPBoostRegressor",
                     params = xgb_params,
                 )
             } else if (estimator_id == 1 && evaluator == "xgb") {
-                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_vec)
+                dtrain <- xgboost::xgb.DMatrix(data = X_mat, label = y_mat)
                 estimators[[estimator_id + 1]] <<- xgboost::xgboost(
                     data = dtrain,
                     nrounds = 100,
