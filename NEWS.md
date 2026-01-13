@@ -1,3 +1,8 @@
+# SHAPBoost 1.0.2
+## New Features
+* Added `fixed_variables` parameter to SHAPBoostRegressor and SHAPBoostSurvival
+    to allow users to specify variables that should always be included in the selected feature set.
+
 # SHAPBoost 1.0.1
 
 ## Bug Fixes
