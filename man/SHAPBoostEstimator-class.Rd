@@ -37,6 +37,8 @@ SHAPBoostSurvival. Any new method should implement the abstract methods defined 
 
 \item{\code{verbose}}{The verbosity level of the output.}
 
+\item{\code{fixed_variables}}{A character vector of variable names to be always included.}
+
 \item{\code{stratification}}{A logical indicating whether to use stratified sampling. Only applicable for c-index metric.}
 
 \item{\code{collinearity_check}}{A logical indicating whether to check for collinearity.}
