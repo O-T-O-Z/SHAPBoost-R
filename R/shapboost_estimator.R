@@ -22,6 +22,7 @@ NULL
 #' @field num_resets The number of resets allowed.
 #' @field fold_random_state The random state for reproducibility in cross-validation.
 #' @field verbose The verbosity level of the output.
+#' @field fixed_variables A character vector of variable names to be always included.
 #' @field stratification A logical indicating whether to use stratified sampling. Only applicable for c-index metric.
 #' @field collinearity_check A logical indicating whether to check for collinearity.
 #' @field correlation_threshold The threshold for correlation to consider features as collinear.
@@ -86,6 +87,7 @@ SHAPBoostEstimator <- setRefClass(
                               num_resets = 1,
                               fold_random_state = NULL,
                               verbose = 0,
+                              fixed_variables = NULL,
                               stratification = FALSE,
                               collinearity_check = TRUE,
                               correlation_threshold = 0.7) {
@@ -106,7 +108,11 @@ SHAPBoostEstimator <- setRefClass(
             collinearity_check <<- collinearity_check
             correlation_threshold <<- correlation_threshold
             global_sample_weights <<- numeric(0)
-            all_selected_variables <<- list()
+            if (!is.null(fixed_variables)) {
+                all_selected_variables <<- as.list(fixed_variables)
+            } else {
+                all_selected_variables <<- list()
+            }
             selected_subset <<- list()
             collinear_features <<- list()
             stop_conditions <<- list(
@@ -138,6 +144,14 @@ SHAPBoostEstimator <- setRefClass(
             }
             if (!is.null(custom_global_sample_weights)) {
                 global_sample_weights <<- custom_global_sample_weights
+            }
+            # check if all_selected_variables are in X
+            if (length(all_selected_variables) > 0) {
+                for (var in all_selected_variables) {
+                    if (!(var %in% colnames(X))) {
+                        stop(paste("Fixed variable", var, "not found in X"))
+                    }
+                }
             }
 
             global_sample_weights <<- rep(1, nrow(X))
@@ -326,7 +340,7 @@ SHAPBoostEstimator <- setRefClass(
             if (collinearity_check) {
                 correlated_vars <- correlation_check(X, selected_variable)
                 while (length(correlated_vars) > 1) {
-                    message("Found", length(correlated_vars), "correlated variables:", paste(correlated_vars, collapse = ", "), "\n")
+                    message("Found ", length(correlated_vars), " correlated variables: ", paste(correlated_vars, collapse = ", "), "\n")
                     selected_variable <- select_best_siso(X, y, correlated_vars)
                     highly_correlated_vars <- correlated_vars[!correlated_vars %in% selected_variable]
                     collinear_features <<- c(collinear_features, highly_correlated_vars)
